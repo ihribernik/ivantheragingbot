@@ -27,6 +27,9 @@ class ChatReader(commands.Bot):
         if message.echo:
             return
 
+        if message.author.name.lower() == self.nick.lower():
+            return
+
         await self.handle_commands(message)
 
     async def reproduce_audio(self, message: str):
@@ -36,6 +39,7 @@ class ChatReader(commands.Bot):
         pygame.mixer.music.play()
         while pygame.mixer.music.get_busy():
             pygame.time.Clock().tick(10)
+        pygame.mixer.music.unload()
         os.remove(self.message_name)
 
     @commands.command(name="speak")
