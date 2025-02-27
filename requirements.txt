@@ -1,3 +1,5 @@
-twitchio
 gTTS
 pygame
+setuptools
+twitchio
+python-dotenv
