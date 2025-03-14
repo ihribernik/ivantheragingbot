@@ -1,9 +1,12 @@
 import logging
 import os
+import re
 
 import pygame
 from gtts import gTTS
+from twitchio import Message
 from twitchio.ext import commands
+from .utils import url_re
 
 
 class ChatReader(commands.Bot):
@@ -28,7 +31,7 @@ class ChatReader(commands.Bot):
         if message.echo:
             return
 
-        if message.author.name.lower() == self.nick.lower() and not os.getenv(
+        if message.author.name.lower() in self.ignored_users and not os.getenv(
             "READ_AUTHOR_MESSAGE", False
         ):
             return
@@ -37,10 +40,22 @@ class ChatReader(commands.Bot):
 
         if os.getenv("AUTO_READ", None) is not None:
             if parsed_msg.prefix is None:
-                message = f"{message.author.name} dice: {message.content}"
+                message = self.get_parsed_message(message)
                 return await self.reproduce_audio(message)
 
         return await self.handle_commands(message)
+
+    @property
+    def ignored_users(self):
+        return [self.nick.lower(), "nightbot", "UrMom"]
+
+    def get_parsed_message(self, message: Message) -> str:
+        autor = message.author.name or "<unknown>"
+        content: str = message.content or ""
+        parsed_message = re.sub(url_re, "[Enlace...]", content)
+        final_message = f"{autor} dice: {parsed_message}"
+
+        return final_message
 
     async def event_command_error(
         self,
