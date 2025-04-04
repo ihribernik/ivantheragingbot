@@ -1,20 +1,21 @@
 import logging
 import os
 import re
+from pathlib import Path
 
 import pygame
 from gtts import gTTS
 from twitchio import Message
 from twitchio.ext import commands
 from .utils import url_re
+from pathlib import Path
 
 
 class ChatReader(commands.Bot):
     lang = "es"
-    MESSAGE_LOCATION = "./message.mp3"
     tld = "com.ar"
 
-    def __init__(self):
+    def __init__(self, package_location: Path):
         super().__init__(
             token=os.getenv("IRC_TOKEN", "NOT_A_VALID_TOKEN"),
             prefix="!",
@@ -22,10 +23,15 @@ class ChatReader(commands.Bot):
         )
         pygame.mixer.init()
         self.logger = logging.getLogger("ChatReader")
+        self.package_location = package_location
+
+        self.message_location = self.package_location / "assets/message.mp3"
+        self.codec_location = self.package_location / "assets/codec.mp3"
+        self.categoria_location = self.package_location / "assets/categoria.mp3"
 
     async def event_ready(self):
-        message = f"Bot has connected to Twitch as {self.nick}"
-        await self.reproduce_audio(message)
+        message = f"✈️ Bot has connected to Twitch as {self.nick}"
+        await self.tts(message)
 
     async def event_message(self, message):
         if message.echo:
@@ -41,7 +47,7 @@ class ChatReader(commands.Bot):
         if os.getenv("AUTO_READ", None) is not None:
             if parsed_msg.prefix is None:
                 message = self.get_parsed_message(message)
-                return await self.reproduce_audio(message)
+                return await self.tts(message)
 
         return await self.handle_commands(message)
 
@@ -78,26 +84,46 @@ class ChatReader(commands.Bot):
         self.logger.error("Error en el comando %s:%s", ctx.command, error)
         await ctx.send("Ocurrió un error. Inténtalo de nuevo más tarde.")
 
-    async def reproduce_audio(self, message: str):
-        self.logger.warning(message)
-        tts = gTTS(text=message, lang=self.lang, slow=False, tld=self.tld)
-        tts.save(self.MESSAGE_LOCATION)
-        pygame.mixer.music.load(self.MESSAGE_LOCATION)
+    async def reproduce_audio(self, file_location: Path | str):
+        pygame.mixer.music.load(file_location)
         pygame.mixer.music.play()
         while pygame.mixer.music.get_busy():
             pygame.time.Clock().tick(10)
         pygame.mixer.music.unload()
-        os.remove(self.MESSAGE_LOCATION)
 
     @property
     def posible_commands(self):
         return ", ".join(self.commands)
 
+    async def tts(self, message: str):
+        self.logger.warning(message)
+        tts = gTTS(text=message, lang=self.lang, slow=False, tld=self.tld)
+        tts.save(self.message_location)
+        await self.reproduce_audio(self.message_location)
+        os.remove(self.message_location)
+
     @commands.command(name="speak")
     async def speak(self, ctx: commands.Context, *, phrase: str):
         message = f"{ctx.author.name} dice: {phrase}"
-        await self.reproduce_audio(message)
+        self.logger.warning(message)
+        await self.tts(message)
 
     @commands.command(name="help")
     async def help(self, ctx: commands.Context):
-        await ctx.send(f"Comandos disponibles >> {self.posible_commands}")
+        await ctx.send(f"🕵️‍♂️ Comandos disponibles >> {self.posible_commands}")
+
+    @commands.command(name="red")
+    async def red(self, ctx: commands.Context):
+        """comando en homenaje al comoda red de padawanstrainer
+
+        Args:
+            ctx (commands.Context): context of the request command
+        """
+        await self.reproduce_audio(self.codec_location)
+        await ctx.send("🛜 Notificacion de red baja enviada...")
+
+    @commands.command(name="categoria")
+    async def categoria(self, ctx: commands.Context):
+        """"""
+        await self.reproduce_audio(self.categoria_location)
+        await ctx.send("📷 Se le aviso al streamer que cambie la categoria...")
