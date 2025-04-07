@@ -7,13 +7,14 @@ import pygame
 from gtts import gTTS
 from twitchio import Message
 from twitchio.ext import commands
+
 from .utils import url_re
-from pathlib import Path
 
 
 class ChatReader(commands.Bot):
     lang = "es"
     tld = "com.ar"
+    audio_output = "CABLE Input (VB-Audio Virtual Cable)"  # use the https://vb-audio.com/Cable/ to emulate an audio output
 
     def __init__(self, package_location: Path):
         super().__init__(
@@ -21,12 +22,13 @@ class ChatReader(commands.Bot):
             prefix="!",
             initial_channels=["ivantheragingpython"],
         )
-        pygame.mixer.init()
+        pygame.mixer.init(devicename=self.audio_output)
         self.logger = logging.getLogger("ChatReader")
         self.package_location = package_location
 
         self.message_location = self.package_location / "assets/message.mp3"
         self.codec_location = self.package_location / "assets/codec.mp3"
+        self.alerta_location = self.package_location / "assets/alerta.mp3"
         self.categoria_location = self.package_location / "assets/categoria.mp3"
 
     async def event_ready(self):
@@ -37,10 +39,10 @@ class ChatReader(commands.Bot):
         if message.echo:
             return
 
-        if message.author.name.lower() in self.ignored_users and not os.getenv(
-            "READ_AUTHOR_MESSAGE", False
-        ):
-            return
+        # if message.author.name.lower() in self.ignored_users and not os.getenv(
+        #     "READ_AUTHOR_MESSAGE", False
+        # ):
+        #     return
 
         parsed_msg = await self.get_context(message)
 
@@ -73,6 +75,10 @@ class ChatReader(commands.Bot):
                 "El comando no existe.... !help para ver los commandos disponibles"
             )
 
+        if isinstance(error, commands.CommandOnCooldown):
+            await context.send(str(error))
+            # self.logger.error(error)
+
         self.logger.error(
             "Error al ejecutar %s: %s",
             context.command.name,
@@ -103,12 +109,14 @@ class ChatReader(commands.Bot):
         os.remove(self.message_location)
 
     @commands.command(name="speak")
+    @commands.cooldown(1, 30, commands.Bucket.user)
     async def speak(self, ctx: commands.Context, *, phrase: str):
         message = f"{ctx.author.name} dice: {phrase}"
         self.logger.warning(message)
         await self.tts(message)
 
     @commands.command(name="help")
+    @commands.cooldown(1, 30, commands.Bucket.user)
     async def help(self, ctx: commands.Context):
         await ctx.send(f"🕵️‍♂️ Comandos disponibles >> {self.posible_commands}")
 
@@ -122,7 +130,14 @@ class ChatReader(commands.Bot):
         await self.reproduce_audio(self.codec_location)
         await ctx.send("🛜 Notificacion de red baja enviada...")
 
+    @commands.command(name="alerta")
+    @commands.cooldown(1, 30, commands.Bucket.user)
+    async def alerat(self, ctx: commands.Context):
+        await self.reproduce_audio(self.alerta_location)
+        await ctx.send("⚡ ya se alerto al streamer")
+
     @commands.command(name="categoria")
+    @commands.cooldown(1, 30, commands.Bucket.user)
     async def categoria(self, ctx: commands.Context):
         """"""
         await self.reproduce_audio(self.categoria_location)
