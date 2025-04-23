@@ -39,10 +39,10 @@ class ChatReader(commands.Bot):
         if message.echo:
             return
 
-        # if message.author.name.lower() in self.ignored_users and not os.getenv(
-        #     "READ_AUTHOR_MESSAGE", False
-        # ):
-        #     return
+        if message.author.name.lower() in self.ignored_users and not os.getenv(
+            "READ_AUTHOR_MESSAGE", False
+        ):
+            return
 
         parsed_msg = await self.get_context(message)
 
@@ -139,6 +139,5 @@ class ChatReader(commands.Bot):
     @commands.command(name="categoria")
     @commands.cooldown(1, 30, commands.Bucket.user)
     async def categoria(self, ctx: commands.Context):
-        """"""
         await self.reproduce_audio(self.categoria_location)
         await ctx.send("📷 Se le aviso al streamer que cambie la categoria...")
