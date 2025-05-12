@@ -30,18 +30,17 @@ class ChatReader(commands.Bot):
         self.codec_location = self.package_location / "assets/codec.mp3"
         self.alerta_location = self.package_location / "assets/alerta.mp3"
         self.categoria_location = self.package_location / "assets/categoria.mp3"
+        self.can_read = os.getenv("READ_AUTHOR_MESSAGE", None)
 
     async def event_ready(self):
         message = f"✈️ Bot has connected to Twitch as {self.nick}"
-        await self.tts(message)
+        return await self.tts(message)
 
     async def event_message(self, message):
         if message.echo:
             return
 
-        if message.author.name.lower() in self.ignored_users and not os.getenv(
-            "READ_AUTHOR_MESSAGE", False
-        ):
+        if message.author.name.lower() in self.ignored_users and not self.can_read:
             return
 
         parsed_msg = await self.get_context(message)
