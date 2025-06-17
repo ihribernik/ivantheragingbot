@@ -14,7 +14,8 @@ from .utils import url_re
 class ChatReader(commands.Bot):
     lang = "es"
     tld = "com.ar"
-    audio_output = "CABLE Input (VB-Audio Virtual Cable)"  # use the https://vb-audio.com/Cable/ to emulate an audio output
+    virtual_audio_output = "CABLE Input (VB-Audio Virtual Cable)"
+    audio_output = "Digital Audio (S/PDIF) (High Definition Audio Device)"
 
     def __init__(self, package_location: Path):
         super().__init__(
