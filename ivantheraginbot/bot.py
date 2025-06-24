@@ -55,7 +55,7 @@ class ChatReader(commands.Bot):
 
     @property
     def ignored_users(self):
-        return [self.nick.lower(), "nightbot", "UrMom"]
+        return [self.nick.lower(), "nightbot", "streamelements"]
 
     def get_parsed_message(self, message: Message) -> str:
         autor = message.author.name or "<unknown>"
