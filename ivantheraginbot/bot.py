@@ -8,14 +8,13 @@ from gtts import gTTS
 from twitchio import Message
 from twitchio.ext import commands
 
-from .utils import url_re
-
-
 class ChatReader(commands.Bot):
     lang = "es"
     tld = "com.ar"
     virtual_audio_output = "CABLE Input (VB-Audio Virtual Cable)"
     audio_output = "Digital Audio (S/PDIF) (High Definition Audio Device)"
+    url_re = re.compile(r"https?://(?:www\.)?[^\s/$.?#].[^\s]*")
+
 
     def __init__(self, package_location: Path):
         super().__init__(
@@ -60,7 +59,7 @@ class ChatReader(commands.Bot):
     def get_parsed_message(self, message: Message) -> str:
         autor = message.author.name or "<unknown>"
         content: str = message.content or ""
-        parsed_message = re.sub(url_re, "[Enlace...]", content)
+        parsed_message = re.sub(self.url_re, "[Enlace...]", content)
         final_message = f"{autor} dice: {parsed_message}"
 
         return final_message
@@ -77,7 +76,6 @@ class ChatReader(commands.Bot):
 
         if isinstance(error, commands.CommandOnCooldown):
             await context.send(str(error))
-            # self.logger.error(error)
 
         self.logger.error(
             "Error al ejecutar %s: %s",
