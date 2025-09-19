@@ -1,0 +1,26 @@
+[project]
+name = "ivantheragingbot"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "gtts>=2.5.4",
+    "pydantic-settings>=2.10.1",
+    "pygame>=2.6.1",
+    "python-dotenv>=1.1.1",
+    "twitchio[starlette]>=3.1.0",
+]
+
+[dependency-groups]
+dev = [
+    "factory-boy==3.3.3",
+    "flake8>=7.3.0",
+    "isort==5.10.1",
+    "pytest-cov==4.0.0",
+    "pytest-faker>=2.0.0",
+    "pytest==8.3.5",
+    "setuptools>=80.9.0",
+    "tox==4.24.2",
+    "twitchio[dev,docs]>=3.1.0",
+]

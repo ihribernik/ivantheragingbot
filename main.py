@@ -1,14 +1,28 @@
+import asyncio
+import logging
 from pathlib import Path
-from dotenv import load_dotenv
 
-from ivantheraginbot.bot import ChatReader
+import twitchio
+
+from ivantheraginbot.bot import IvanTheRagingBot
+from ivantheraginbot.config import Settings
+
+LOGGER: logging.Logger = logging.getLogger("ivantheraginbot")
 
 
-def main():
-    load_dotenv()
+def main() -> None:
     package_location = Path.cwd()
-    bot = ChatReader(package_location)
-    bot.run()
+    twitchio.utils.setup_logging(level=logging.WARNING)
+    settings = Settings()
+
+    async def runner() -> None:
+        async with IvanTheRagingBot(package_location, settings) as bot:
+            await bot.start()
+
+    try:
+        asyncio.run(runner())
+    except KeyboardInterrupt:
+        LOGGER.warning("Shutting down due to Keyboard Interrupt...")
 
 
 if __name__ == "__main__":
