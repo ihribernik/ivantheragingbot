@@ -16,3 +16,4 @@ class Settings(BaseSettings):
     CLIENT_SECRET: str = "NOT_A_VALID_CLIENT_SECRET"
     BOT_ID: str = "NOT_A_VALID_BOT_ID"
     OWNER_ID: str = "NOT_A_VALID_OWNER_ID"
+    USER_ACCESS_TOKEN: str = "NOT_A_VALID_USER_ACCESS_TOKEN"

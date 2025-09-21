@@ -2,10 +2,11 @@ import asyncio
 import logging
 from pathlib import Path
 
+import asqlite
 import twitchio
 
-from ivantheraginbot.bot import IvanTheRagingBot
-from ivantheraginbot.config import Settings
+from ivantheragingbot.bot import IvanTheRagingBot
+from ivantheragingbot.config import Settings
 
 LOGGER: logging.Logger = logging.getLogger("ivantheraginbot")
 
@@ -16,8 +17,13 @@ def main() -> None:
     settings = Settings()
 
     async def runner() -> None:
-        async with IvanTheRagingBot(package_location, settings) as bot:
-            await bot.start()
+        async with asqlite.create_pool("tokens.db") as db_pool:
+            async with IvanTheRagingBot(
+                package_location,
+                db_pool=db_pool,
+                settings=settings,
+            ) as bot:
+                await bot.start()
 
     try:
         asyncio.run(runner())

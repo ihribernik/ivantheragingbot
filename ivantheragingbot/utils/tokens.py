@@ -2,7 +2,7 @@ import asyncio
 
 import twitchio
 
-from ivantheraginbot.config import Settings
+from ivantheragingbot.config import Settings
 
 
 async def main() -> None:

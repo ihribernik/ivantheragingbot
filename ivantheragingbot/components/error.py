@@ -18,7 +18,10 @@ class ErrorComponent(commands.Component):
     async def component_teardown(self) -> None:
         self.bot.event_command_error = self.original
 
-    async def event_command_error(self, payload: commands.CommandErrorPayload) -> None:
+    async def event_command_error(
+        self,
+        payload: commands.CommandErrorPayload,
+    ) -> None:
         ctx = payload.context
         command = ctx.command
         error = payload.exception

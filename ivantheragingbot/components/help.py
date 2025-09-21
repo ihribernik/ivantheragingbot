@@ -9,4 +9,4 @@ class HelpComponent(commands.Component):
     @commands.command(name="help")
     async def help(self, ctx: commands.Context):
         print("calling the help command")
-        await ctx.send(f"🕵️‍♂️ Comandos disponibles >>")
+        await ctx.send("🕵️‍♂️ Comandos disponibles >>")

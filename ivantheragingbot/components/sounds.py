@@ -1,5 +1,5 @@
 from twitchio.ext import commands
-from ivantheraginbot.utils import reproduce_audio
+from ivantheragingbot.utils import reproduce_audio
 
 
 class SoundsComponent(commands.Component):
