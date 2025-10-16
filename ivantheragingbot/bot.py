@@ -61,31 +61,6 @@ class IvanTheRagingBot(commands.Bot):
         await self.add_component(SoundsComponent(self))
         await self.add_component(SpeakComponent(self))
 
-    async def event_oauth_authorized(self, payload: UserTokenPayload) -> None:
-        await self.add_token(payload.access_token, payload.refresh_token)
-
-        if not payload.user_id:
-            return
-
-        if payload.user_id == self.bot_id:
-            # We usually don't want subscribe to events on the bots channel...
-            return
-
-        # A list of subscriptions we would like to make to the newly authorized channel...
-        subs: list[SubscriptionPayload] = [
-            ChatMessageSubscription(
-                broadcaster_user_id=payload.user_id, user_id=self.bot_id
-            ),
-        ]
-
-        resp: MultiSubscribePayload = await self.multi_subscribe(subs)
-        if resp.errors:
-            self.logger.warning(
-                "Failed to subscribe to: %r, for user: %s",
-                resp.errors,
-                payload.user_id,
-            )
-
     async def add_token(
         self,
         token: str,
@@ -110,6 +85,16 @@ class IvanTheRagingBot(commands.Bot):
             resp.user_id,
         )
         return resp
+
+    async def load_tokens(self, path: str | None = None) -> None:
+
+        async with self.db_pool.acquire() as connection:
+            rows: list[sqlite3.Row] = await connection.fetchall(
+                """SELECT * from tokens"""
+            )
+
+        for row in rows:
+            await self.add_token(row["token"], row["refresh"])
 
     async def setup_database(
         self,
