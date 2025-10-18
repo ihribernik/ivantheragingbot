@@ -1,11 +1,11 @@
-gTTS
-pygame
+gTTS==2.5.4
+pygame==2.6.1
 setuptools
-twitchio
-python-dotenv
+twitchio==2.10.0
+python-dotenv==1.1.1
 tox==4.24.2
 pytest==8.3.5
 pytest-cov==4.0.0
 isort==5.10.1
 factory-boy==3.3.3
-pytest-faker
+pytest-faker==2.0.0
