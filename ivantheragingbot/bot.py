@@ -61,6 +61,12 @@ class IvanTheRagingBot(commands.Bot):
         await self.add_component(SoundsComponent(self))
         await self.add_component(SpeakComponent(self))
 
+        subscription = ChatMessageSubscription(
+            broadcaster_user_id=self.settings.BOT_ID,
+            user_id=self.settings.BOT_ID,
+        )
+        await self.subscribe_websocket(payload=subscription)
+
     async def add_token(
         self,
         token: str,
@@ -87,19 +93,15 @@ class IvanTheRagingBot(commands.Bot):
         return resp
 
     async def load_tokens(self, path: str | None = None) -> None:
+        query = """SELECT * from tokens"""
 
         async with self.db_pool.acquire() as connection:
-            rows: list[sqlite3.Row] = await connection.fetchall(
-                """SELECT * from tokens"""
-            )
+            rows: list[sqlite3.Row] = await connection.fetchall(query)
 
         for row in rows:
             await self.add_token(row["token"], row["refresh"])
 
-    async def setup_database(
-        self,
-        db: Pool,
-    ) -> tuple[list[tuple[str, str]], list[SubscriptionPayload]]:
+    async def setup_database(self) -> None:
 
         query = """
         CREATE TABLE IF NOT EXISTS tokens(
@@ -108,33 +110,8 @@ class IvanTheRagingBot(commands.Bot):
             refresh TEXT NOT NULL
         )
         """
-        async with db.acquire() as connection:
+        async with self.db_pool.acquire() as connection:
             await connection.execute(query)
-
-            # Fetch any existing tokens...
-            rows: list[sqlite3.Row] = await connection.fetchall(
-                """SELECT * from tokens"""
-            )
-
-            tokens: list[tuple[str, str]] = []
-            subs: list[SubscriptionPayload] = []
-
-            for row in rows:
-                tokens.append((row["token"], row["refresh"]))
-
-                if row["user_id"] == self.settings.BOT_ID:
-                    continue
-
-                subs.extend(
-                    [
-                        ChatMessageSubscription(
-                            broadcaster_user_id=row["user_id"],
-                            user_id=self.settings.BOT_ID,
-                        )
-                    ]
-                )
-
-        return tokens, subs
 
     async def event_ready(self) -> None:
         username = self.user.name if self.user else "<unknown>"
