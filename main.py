@@ -23,7 +23,7 @@ def main() -> None:
                 db_pool=db_pool,
                 settings=settings,
             ) as bot:
-                await bot.setup_database(db_pool)
+                await bot.setup_database()
                 await bot.start()
 
     try:
