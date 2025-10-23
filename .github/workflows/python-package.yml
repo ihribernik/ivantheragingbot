@@ -26,5 +26,11 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install the project
       run: uv sync --locked --all-extras --dev
+    - name: Lint with flake8
+      run: uv run flake8 ./ivantheragingbot
+    - name: Lint with isort
+      run: uv run isort --check ./ivantheragingbot
+    - name: Type check with mypy
+      run: uv run mypy ./ivantheragingbot
     - name: Run tests
-      run: uv run pytest tests
+      run: uv run pytest tests --cov=ivantheragingbot --cov-report=xml
