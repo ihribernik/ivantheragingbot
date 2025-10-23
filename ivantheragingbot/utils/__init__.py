@@ -4,7 +4,7 @@ from pathlib import Path
 from uuid import uuid4
 
 import pygame
-from gtts import gTTS
+from gtts import gTTS  # type: ignore
 
 logger = logging.getLogger(__name__)
 

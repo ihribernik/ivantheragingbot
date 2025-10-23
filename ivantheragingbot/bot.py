@@ -27,6 +27,7 @@ class IvanTheRagingBot(commands.Bot):
     url_re: re.Pattern = re.compile(r"https?://(?:www\.)?[^\s/$.?#].[^\s]*")
     settings: Settings
     logger: logging.Logger
+    assets_location: Path
 
     def __init__(
         self,
@@ -40,6 +41,7 @@ class IvanTheRagingBot(commands.Bot):
         self.settings = settings or Settings()
         self.logger = logging.getLogger(__name__)
         self.package_location = package_location
+        self.assets_location = package_location.parent / "assets"
 
         super().__init__(
             client_id=self.settings.CLIENT_ID,

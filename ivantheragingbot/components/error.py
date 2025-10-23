@@ -14,11 +14,11 @@ class ErrorComponent(commands.Component):
     def __init__(self, bot: BotT) -> None:
         super().__init__()
         self.original = bot.event_command_error
-        bot.event_command_error = self.event_command_error
+        setattr(bot, "event_command_error", self.event_command_error)
         self.bot = bot
 
     async def component_teardown(self) -> None:
-        self.bot.event_command_error = self.original
+        setattr(self.bot, "event_command_error", self.original)
 
     async def event_command_error(
         self,
