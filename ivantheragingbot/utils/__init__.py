@@ -17,7 +17,12 @@ async def reproduce_audio(file_location: Path | str) -> None:
     pygame.mixer.music.unload()
 
 
-async def tts(message: str, message_location: Path, lang: str, tld: str) -> None:
+async def tts(
+    message: str,
+    message_location: Path,
+    lang: str,
+    tld: str,
+) -> None:
     logger.warning(message)
     tts = gTTS(
         text=message,

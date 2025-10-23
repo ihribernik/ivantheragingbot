@@ -18,10 +18,17 @@ class SpeakComponent(commands.Component):
 
     @commands.command(name="speak")
     @commands.cooldown(rate=1, per=30, key=commands.BucketType.user)
-    async def speak(self, ctx: commands.Context, *, phrase: Optional[str] = None) -> None:
+    async def speak(
+        self,
+        ctx: commands.Context,
+        *,
+        phrase: Optional[str] = None,
+    ) -> None:
         """Speak a user-provided phrase using TTS."""
         if not phrase:
-            await ctx.send(f"{ctx.author.name}, you need to provide something to say!")
+            await ctx.send(
+                f"{ctx.author.name}, you need to provide something to say!",
+            )
             return
 
         message = f"{ctx.author.name} dice: {phrase}"

@@ -36,7 +36,8 @@ class ErrorComponent(commands.Component):
 
         if isinstance(error, commands.GuardFailure):
             await ctx.send(
-                f"{ctx.chatter} you do not have permission to use this command."
+                str(ctx.chatter) +
+                " you are not allowed to use this command."
             )
 
         msg = f'Ignoring exception in command "{ctx.command}":\n'
