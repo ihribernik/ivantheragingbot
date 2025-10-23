@@ -1,11 +1,15 @@
+from __future__ import annotations
+
 from twitchio.ext import commands
 from ivantheragingbot.utils import reproduce_audio
+from ivantheragingbot.types import BotT
 
 
 class SoundsComponent(commands.Component):
 
-    def __init__(self, bot: commands.Bot) -> None:
-        self.bot = bot
+    def __init__(self, bot: BotT) -> None:
+        super().__init__()
+        self.bot: BotT = bot
 
     @commands.command(name="red")
     async def red(self, ctx: commands.Context):
