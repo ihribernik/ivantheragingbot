@@ -1,10 +1,10 @@
 import logging
 import os
 from pathlib import Path
+from uuid import uuid4
 
 import pygame
 from gtts import gTTS
-from uuid import uuid4
 
 logger = logging.getLogger(__name__)
 

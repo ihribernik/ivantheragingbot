@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from twitchio.ext import commands
-from ivantheragingbot.utils import reproduce_audio
+
 from ivantheragingbot.types import BotT
+from ivantheragingbot.utils import reproduce_audio
 
 
 class SoundsComponent(commands.Component):
