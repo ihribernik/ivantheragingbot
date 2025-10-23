@@ -56,16 +56,17 @@ class IvanTheRagingBot(commands.Bot):
 
     async def setup_hook(self) -> None:
         await self.add_component(HelpComponent(self))
-        await self.add_component(ChatComponent(self))
-        await self.add_component(ErrorComponent(self))
-        await self.add_component(SoundsComponent(self))
-        await self.add_component(SpeakComponent(self))
+        # await self.add_component(ChatComponent(self))
+        # await self.add_component(ErrorComponent(self))
+        # await self.add_component(SoundsComponent(self))
+        # await self.add_component(SpeakComponent(self))
 
-        subscription = ChatMessageSubscription(
-            broadcaster_user_id=self.settings.BOT_ID,
-            user_id=self.settings.BOT_ID,
-        )
-        await self.subscribe_websocket(payload=subscription)
+        # subscription = ChatMessageSubscription(
+        #     broadcaster_user_id=self.settings.OWNER_ID,
+        #     user_id=self.settings.BOT_ID,
+        # )
+
+        # await self.subscribe_websocket(payload=subscription)
 
     async def add_token(
         self,

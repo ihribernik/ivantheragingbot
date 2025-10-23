@@ -13,7 +13,7 @@ async def main() -> None:
     ) as client:
         await client.login()
         user = await client.fetch_users(
-            logins=["ivantheragingpython", "ivantheraginbot"]
+            logins=["ivantheragingpython", "ivantheragingbot"]
         )
         for u in user:
             print(f"User: {u.name} - ID: {u.id}")
