@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/ihribernik/ivantheragingbot/internal/bot"
 	"github.com/ihribernik/ivantheragingbot/internal/config"
+	"github.com/ihribernik/ivantheragingbot/internal/logging"
 )
 
 func main() {
@@ -19,24 +19,24 @@ func main() {
 
 	workingDir, err := os.Getwd()
 	if err != nil {
-		log.Fatalf("failed to resolve working dir: %v", err)
+		logging.Fatal("failed to resolve working dir: %v", err)
 	}
 
 	cfg, err := config.Load(filepath.Clean(workingDir))
 	if err != nil {
-		log.Fatalf("config error: %v", err)
+		logging.Fatal("config error: %v", err)
 	}
 
 	chatBot, err := bot.New(cfg)
 	if err != nil {
-		log.Fatalf("bot init error: %v", err)
+		logging.Fatal("bot init error: %v", err)
 	}
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	log.Printf("starting ivantheragingbot as %s in channel %s", cfg.Username, cfg.Channel)
+	logging.Info("starting ivantheragingbot as %s in channel %s", cfg.Username, cfg.Channel)
 	if err := chatBot.Start(ctx); err != nil && ctx.Err() == nil {
-		log.Fatalf("bot stopped with error: %v", err)
+		logging.Fatal("bot stopped with error: %v", err)
 	}
 }

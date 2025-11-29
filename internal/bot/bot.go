@@ -3,7 +3,6 @@ package bot
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/ihribernik/ivantheragingbot/internal/audio"
 	"github.com/ihribernik/ivantheragingbot/internal/config"
+	"github.com/ihribernik/ivantheragingbot/internal/logging"
 	"github.com/ihribernik/ivantheragingbot/internal/tts"
 )
 
@@ -86,7 +86,7 @@ func (b *Bot) registerHandlers() {
 }
 
 func (b *Bot) handleMessage(message twitch.PrivateMessage) {
-	log.Printf("chat message from %s: %s", message.User.Name, strings.TrimSpace(message.Message))
+	logging.Info("chat message from %s: %s", message.User.Name, strings.TrimSpace(message.Message))
 
 	if b.shouldIgnore(message.User.Name) && !b.cfg.ReadAuthorMessages {
 		return
@@ -105,7 +105,7 @@ func (b *Bot) handleMessage(message twitch.PrivateMessage) {
 	if b.cfg.AutoRead {
 		text := b.parseMessage(message.User.Name, content)
 		if err := b.tts(text); err != nil {
-			log.Printf("tts error: %v", err)
+			logging.Error("tts error: %v", err)
 		}
 	}
 }
@@ -199,7 +199,7 @@ func (b *Bot) commandSpeak(msg twitch.PrivateMessage, phrase string) {
 
 	message := fmt.Sprintf("%s dice: %s", msg.User.Name, text)
 	if err := b.tts(message); err != nil {
-		log.Printf("speak tts error: %v", err)
+		logging.Error("speak tts error: %v", err)
 	}
 }
 
@@ -209,21 +209,21 @@ func (b *Bot) commandHelp(msg twitch.PrivateMessage, _ string) {
 
 func (b *Bot) commandRed(msg twitch.PrivateMessage, _ string) {
 	if err := b.playAsset("codec.mp3"); err != nil {
-		log.Printf("red command error: %v", err)
+		logging.Error("red command error: %v", err)
 	}
 	b.client.Say(b.cfg.Channel, "Notificacion de red baja enviada...")
 }
 
 func (b *Bot) commandAlerta(msg twitch.PrivateMessage, _ string) {
 	if err := b.playAsset("alerta.mp3"); err != nil {
-		log.Printf("alerta command error: %v", err)
+		logging.Error("alerta command error: %v", err)
 	}
 	b.client.Say(b.cfg.Channel, "ya se alerto al streamer")
 }
 
 func (b *Bot) commandCategoria(msg twitch.PrivateMessage, _ string) {
 	if err := b.playAsset("categoria.mp3"); err != nil {
-		log.Printf("categoria command error: %v", err)
+		logging.Error("categoria command error: %v", err)
 	}
 	b.client.Say(b.cfg.Channel, "Se le aviso al streamer que cambie la categoria...")
 }
