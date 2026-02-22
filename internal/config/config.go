@@ -5,7 +5,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
+
+const defaultTTSHTTPTimeout = 10 * time.Second
 
 // Config holds runtime configuration for the Twitch bot.
 type Config struct {
@@ -15,6 +18,7 @@ type Config struct {
 	AssetsDir          string
 	Lang               string
 	TLD                string
+	TTSHTTPTimeout     time.Duration
 	AutoRead           bool
 	ReadAuthorMessages bool
 }
@@ -22,6 +26,19 @@ type Config struct {
 // Load reads configuration values from environment variables and fills in defaults
 // so the bot can start with minimal setup.
 func Load(baseDir string) (Config, error) {
+	ttsHTTPTimeout, err := durationEnvWithDefault("TTS_HTTP_TIMEOUT", defaultTTSHTTPTimeout)
+	if err != nil {
+		return Config{}, err
+	}
+	autoRead, err := boolEnvWithDefault("AUTO_READ", false)
+	if err != nil {
+		return Config{}, err
+	}
+	readAuthorMessages, err := boolEnvWithDefault("READ_AUTHOR_MESSAGE", false)
+	if err != nil {
+		return Config{}, err
+	}
+
 	cfg := Config{
 		Username:           strings.TrimSpace(os.Getenv("TWITCH_USERNAME")),
 		OAuthToken:         strings.TrimSpace(os.Getenv("IRC_TOKEN")),
@@ -29,8 +46,9 @@ func Load(baseDir string) (Config, error) {
 		AssetsDir:          filepath.Join(baseDir, "assets"),
 		Lang:               envWithDefault("TTS_LANG", "es"),
 		TLD:                envWithDefault("TTS_TLD", "com.ar"),
-		AutoRead:           hasFlag("AUTO_READ"),
-		ReadAuthorMessages: hasFlag("READ_AUTHOR_MESSAGE"),
+		TTSHTTPTimeout:     ttsHTTPTimeout,
+		AutoRead:           autoRead,
+		ReadAuthorMessages: readAuthorMessages,
 	}
 
 	if cfg.Channel == "" {
@@ -59,7 +77,35 @@ func envWithDefault(key, fallback string) string {
 	return fallback
 }
 
-func hasFlag(key string) bool {
-	_, ok := os.LookupEnv(key)
-	return ok
+func durationEnvWithDefault(key string, fallback time.Duration) (time.Duration, error) {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return fallback, nil
+	}
+
+	d, err := time.ParseDuration(value)
+	if err != nil {
+		return 0, fmt.Errorf("%s must be a valid duration (e.g. 10s): %w", key, err)
+	}
+	if d <= 0 {
+		return 0, fmt.Errorf("%s must be greater than zero", key)
+	}
+
+	return d, nil
+}
+
+func boolEnvWithDefault(key string, fallback bool) (bool, error) {
+	value := strings.TrimSpace(strings.ToLower(os.Getenv(key)))
+	if value == "" {
+		return fallback, nil
+	}
+
+	switch value {
+	case "1", "true", "yes", "on":
+		return true, nil
+	case "0", "false", "no", "off":
+		return false, nil
+	default:
+		return false, fmt.Errorf("%s must be a valid boolean value", key)
+	}
 }

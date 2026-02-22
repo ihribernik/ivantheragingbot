@@ -12,21 +12,21 @@ import (
 	"github.com/faiface/beep/speaker"
 )
 
-// Player wraps speaker playback with a fixed sample rate to ensure all MP3 assets
+// BeepPlayer wraps speaker playback with a fixed sample rate to ensure all MP3 assets
 // and downloaded TTS clips can be reproduced without overlapping.
-type Player struct {
+type BeepPlayer struct {
 	sampleRate beep.SampleRate
 	initOnce   sync.Once
 	mu         sync.Mutex
 }
 
-// NewPlayer initializes the audio speaker with a target sample rate.
-func NewPlayer() *Player {
-	return &Player{}
+// NewBeepPlayer initializes the audio speaker with a target sample rate.
+func NewBeepPlayer() *BeepPlayer {
+	return &BeepPlayer{}
 }
 
 // Play synchronously plays the MP3 file at the given path.
-func (p *Player) Play(path string) error {
+func (p *BeepPlayer) Play(path string) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -54,7 +54,7 @@ func (p *Player) Play(path string) error {
 	return nil
 }
 
-func (p *Player) ensureSpeaker(sampleRate beep.SampleRate) error {
+func (p *BeepPlayer) ensureSpeaker(sampleRate beep.SampleRate) error {
 	var initErr error
 	p.initOnce.Do(func() {
 		bufferSize := sampleRate.N(time.Second / 10) // 100ms buffer helps avoid stutter.

@@ -1,37 +1,43 @@
-package bot
+package twitch
 
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/gempir/go-twitch-irc/v4"
 
-	"github.com/ihribernik/ivantheragingbot/internal/audio"
+	chatapp "github.com/ihribernik/ivantheragingbot/internal/chat/application"
 	"github.com/ihribernik/ivantheragingbot/internal/config"
 	"github.com/ihribernik/ivantheragingbot/internal/logging"
-	"github.com/ihribernik/ivantheragingbot/internal/tts"
+	"github.com/ihribernik/ivantheragingbot/internal/voice/application/reader"
+	"github.com/ihribernik/ivantheragingbot/internal/voice/application/soundboard"
 )
 
 type Bot struct {
 	cfg        config.Config
 	client     *twitch.Client
-	player     *audio.Player
-	ttsClient  *tts.Client
-	urlRe      *regexp.Regexp
+	terminal   chatapp.Stream
+	voice      *reader.Service
 	commands   map[string]func(twitch.PrivateMessage, string)
 	cooldowns  map[string]map[string]time.Time
 	cooldownMu sync.Mutex
 	ignored    map[string]struct{}
+	soundboard *soundboard.Service
 }
 
-func New(cfg config.Config) (*Bot, error) {
-	player := audio.NewPlayer()
+func New(cfg config.Config, terminalStream chatapp.Stream, voiceSvc *reader.Service, soundboardSvc *soundboard.Service) (*Bot, error) {
+	if terminalStream == nil {
+		return nil, fmt.Errorf("terminal stream is required")
+	}
+	if voiceSvc == nil {
+		return nil, fmt.Errorf("voice service is required")
+	}
+	if soundboardSvc == nil {
+		return nil, fmt.Errorf("soundboard service is required")
+	}
 
 	client := twitch.NewClient(cfg.Username, cfg.OAuthToken)
 	client.Join(cfg.Channel)
@@ -39,9 +45,8 @@ func New(cfg config.Config) (*Bot, error) {
 	bot := &Bot{
 		cfg:       cfg,
 		client:    client,
-		player:    player,
-		ttsClient: &tts.Client{Lang: cfg.Lang, TLD: cfg.TLD},
-		urlRe:     regexp.MustCompile(`https?://(?:www\.)?[^\s/$.?#].[^\s]*`),
+		terminal:  terminalStream,
+		voice:     voiceSvc,
 		commands:  make(map[string]func(twitch.PrivateMessage, string)),
 		cooldowns: make(map[string]map[string]time.Time),
 		ignored: map[string]struct{}{
@@ -49,6 +54,7 @@ func New(cfg config.Config) (*Bot, error) {
 			"nightbot":                    {},
 			"streamelements":              {},
 		},
+		soundboard: soundboardSvc,
 	}
 
 	bot.registerHandlers()
@@ -70,10 +76,23 @@ func (b *Bot) Start(ctx context.Context) error {
 	}
 }
 
+func (b *Bot) Connect(ctx context.Context) error {
+	return b.Start(ctx)
+}
+
+func (b *Bot) Say(channel, message string) {
+	b.client.Say(channel, message)
+}
+
 func (b *Bot) registerHandlers() {
 	b.client.OnConnect(func() {
 		msg := fmt.Sprintf("Bot has connected to Twitch as %s", b.cfg.Username)
-		go b.tts(msg)
+		b.terminal.System(msg)
+		go func() {
+			if err := b.voice.SpeakText(msg); err != nil {
+				logging.Error("connect tts error: %v", err)
+			}
+		}()
 	})
 
 	b.commands["speak"] = b.commandSpeak
@@ -86,8 +105,6 @@ func (b *Bot) registerHandlers() {
 }
 
 func (b *Bot) handleMessage(message twitch.PrivateMessage) {
-	logging.Info("chat message from %s: %s", message.User.Name, strings.TrimSpace(message.Message))
-
 	if b.shouldIgnore(message.User.Name) && !b.cfg.ReadAuthorMessages {
 		return
 	}
@@ -96,6 +113,11 @@ func (b *Bot) handleMessage(message twitch.PrivateMessage) {
 	if content == "" {
 		return
 	}
+	author := message.User.DisplayName
+	if author == "" {
+		author = message.User.Name
+	}
+	b.terminal.Message(author, message.User.Color, content)
 
 	if strings.HasPrefix(content, "!") {
 		b.handleCommand(message, content)
@@ -103,8 +125,7 @@ func (b *Bot) handleMessage(message twitch.PrivateMessage) {
 	}
 
 	if b.cfg.AutoRead {
-		text := b.parseMessage(message.User.Name, content)
-		if err := b.tts(text); err != nil {
+		if err := b.voice.SpeakMessage(message.User.Name, content); err != nil {
 			logging.Error("tts error: %v", err)
 		}
 	}
@@ -168,28 +189,6 @@ func (b *Bot) shouldIgnore(username string) bool {
 	return skip
 }
 
-func (b *Bot) parseMessage(author, content string) string {
-	parsed := b.urlRe.ReplaceAllString(content, "[Enlace...]")
-	return fmt.Sprintf("%s dice: %s", author, parsed)
-}
-
-func (b *Bot) tts(message string) error {
-	path, err := b.ttsClient.Download(filepath.Join(b.cfg.AssetsDir, "tts-cache"), message)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = os.Remove(path)
-	}()
-
-	return b.player.Play(path)
-}
-
-func (b *Bot) playAsset(filename string) error {
-	path := filepath.Join(b.cfg.AssetsDir, filename)
-	return b.player.Play(path)
-}
-
 func (b *Bot) commandSpeak(msg twitch.PrivateMessage, phrase string) {
 	text := strings.TrimSpace(phrase)
 	if text == "" {
@@ -197,8 +196,7 @@ func (b *Bot) commandSpeak(msg twitch.PrivateMessage, phrase string) {
 		return
 	}
 
-	message := fmt.Sprintf("%s dice: %s", msg.User.Name, text)
-	if err := b.tts(message); err != nil {
+	if err := b.voice.SpeakMessage(msg.User.Name, text); err != nil {
 		logging.Error("speak tts error: %v", err)
 	}
 }
@@ -208,22 +206,28 @@ func (b *Bot) commandHelp(msg twitch.PrivateMessage, _ string) {
 }
 
 func (b *Bot) commandRed(msg twitch.PrivateMessage, _ string) {
-	if err := b.playAsset("codec.mp3"); err != nil {
+	if err := b.soundboard.Play("red"); err != nil {
 		logging.Error("red command error: %v", err)
+		b.client.Say(b.cfg.Channel, "No se pudo reproducir la alerta de red.")
+		return
 	}
 	b.client.Say(b.cfg.Channel, "Notificacion de red baja enviada...")
 }
 
 func (b *Bot) commandAlerta(msg twitch.PrivateMessage, _ string) {
-	if err := b.playAsset("alerta.mp3"); err != nil {
+	if err := b.soundboard.Play("alerta"); err != nil {
 		logging.Error("alerta command error: %v", err)
+		b.client.Say(b.cfg.Channel, "No se pudo reproducir la alerta.")
+		return
 	}
 	b.client.Say(b.cfg.Channel, "ya se alerto al streamer")
 }
 
 func (b *Bot) commandCategoria(msg twitch.PrivateMessage, _ string) {
-	if err := b.playAsset("categoria.mp3"); err != nil {
+	if err := b.soundboard.Play("categoria"); err != nil {
 		logging.Error("categoria command error: %v", err)
+		b.client.Say(b.cfg.Channel, "No se pudo reproducir el aviso de categoria.")
+		return
 	}
 	b.client.Say(b.cfg.Channel, "Se le aviso al streamer que cambie la categoria...")
 }
